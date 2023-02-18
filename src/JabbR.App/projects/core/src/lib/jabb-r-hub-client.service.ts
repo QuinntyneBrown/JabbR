@@ -1,9 +1,10 @@
 // Copyright (c) Quinntyne Brown. All Rights Reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, IHttpConnectionOptions } from '@microsoft/signalr';
 import { Subject } from 'rxjs';
+import { BASE_URL } from './constants';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +17,17 @@ export class JabbRHubClientService {
   
   public message$ = new Subject<string>();
 
-  private readonly _baseUrl:string = 'https://localhost:7018/';
+  constructor(
+    @Inject(BASE_URL) private readonly _baseUrl:string
+  ) { }
+
+  public removeFromGroup(groupName:string) {
+
+  }
+
+  public addToGroup(groupName:string) {
+
+  }
 
   public connect(): Promise<boolean> {
     
