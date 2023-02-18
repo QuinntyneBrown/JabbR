@@ -17,7 +17,6 @@ public static class ConfigureServices
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
-        services.AddHostedService<JabbR.Api.MessageProducer>();
         services.AddSignalR();
     }
 }

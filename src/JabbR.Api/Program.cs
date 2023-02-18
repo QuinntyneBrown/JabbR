@@ -1,6 +1,8 @@
 // Copyright (c) Quinntyne Brown. All Rights Reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using JabbR.Core;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApiServices();
@@ -21,6 +23,6 @@ app.MapControllers();
 
 app.UseCors("CorsPolicy");
 
-app.MapHub<JabbR.Api.JabbRHub>("/hub");
+app.MapHub<JabbRHub>("/hub");
 
 app.Run();
