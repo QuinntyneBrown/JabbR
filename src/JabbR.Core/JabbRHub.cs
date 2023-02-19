@@ -9,12 +9,12 @@ public class JabbRHub: Hub<IJabbRHub> {
 
     public override async Task OnConnectedAsync()
     {
-
+        Console.WriteLine("Connected");
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-
+        Console.WriteLine("Disconnected");
     }
 
     public async Task AddToGroup(string groupName)

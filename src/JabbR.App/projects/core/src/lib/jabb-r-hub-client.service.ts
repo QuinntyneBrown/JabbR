@@ -1,57 +1,79 @@
 // Copyright (c) Quinntyne Brown. All Rights Reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-import { Inject, Injectable } from '@angular/core';
+
 import { HubConnection, HubConnectionBuilder, IHttpConnectionOptions } from '@microsoft/signalr';
 import { Subject } from 'rxjs';
-import { BASE_URL } from './constants';
 
-@Injectable({
-  providedIn: 'root'
-})
+
 export class JabbRHubClientService {
-
-  private _hubConnection: HubConnection | undefined;
 
   private _connect: Promise<boolean> | undefined;
   
-  public message$ = new Subject<string>();
+  public readonly message$ = new Subject<any>();
+
+  private _groupMembership: { [groupName: string] : number; } = {};
+
+  public static create(baseUrl:string) {
+
+    const options: IHttpConnectionOptions = {                    
+      logMessageContent: true               
+    };
+  
+    const hubConnection = new HubConnectionBuilder()
+    .withUrl(`${baseUrl}hub`, options)
+    .withAutomaticReconnect()
+    .build(); 
+  
+    return new JabbRHubClientService(hubConnection);
+  }
 
   constructor(
-    @Inject(BASE_URL) private readonly _baseUrl:string
+    private readonly _hubConnection: HubConnection
   ) { }
 
-  public removeFromGroup(groupName:string) {
-
+  public async removeFromGroup(groupName:string): Promise<void> {
+    const numberOfMembers = this._groupMembership[groupName];
+    if(numberOfMembers == 1) {
+      await this._hubConnection?.invoke("removeFromGroup", groupName);
+    }
+    this._groupMembership[groupName] = numberOfMembers - 1;
+    
   }
 
-  public addToGroup(groupName:string) {
-
+  public async addToGroup(groupName:string):Promise<void> {
+    const numberOfMembers = this._groupMembership[groupName];
+    if(!numberOfMembers) {
+      await this._hubConnection?.invoke("addToGroup", groupName);
+      this._groupMembership[groupName] = 1;
+    } else {
+      this._groupMembership[groupName] = numberOfMembers + 1;
+    }
   }
 
-  public connect(): Promise<boolean> {
+  public async onreconnected() {
+    Object.keys(this._groupMembership).forEach(async groupName => {
+      const numberOfMembers = this._groupMembership[groupName];
+      if(numberOfMembers > 0) {
+        this._hubConnection?.invoke("addToGroup", groupName);
+      }
+    })
+  }
+
+  public onmessage(message:string) {
+    const json = JSON.parse(message);
+    this.message$.next(json);
+  }
+
+  public async connect(): Promise<boolean> {
     
     if(this._connect) return this._connect;
 
-    this._connect = new Promise(async (resolve,reject) => {
-
-      const options: IHttpConnectionOptions = {                    
-        logMessageContent: true               
-      };
-  
-      this._hubConnection = new HubConnectionBuilder()
-      .withUrl(`${this._baseUrl}hub`, options)
-      .withAutomaticReconnect()
-      .build(); 
-  
-      this._hubConnection.on("message", (message:string) => {
-        this.message$.next(message);
-      });
-  
+    this._connect = new Promise(async (resolve, _) => {
+      this._hubConnection.on("message", (message:string) => this.onmessage(message));
+      this._hubConnection.onreconnected(() => this.onreconnected());
       await this._hubConnection.start();
-
       resolve(true);
-
     });
 
     return this._connect;
